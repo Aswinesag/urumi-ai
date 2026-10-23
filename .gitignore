@@ -12,3 +12,4 @@ build/
 .pytest_cache/
 .coverage
 /deploy/mariadb-values.yaml
+/deploy/wordpress-values.yaml

@@ -1,0 +1,29 @@
+
+architecture: standalone
+
+auth:
+  enablePostgresUser: true
+  postgresPassword: "UrumiLocalAdmin-ChangeMe-2026"
+  username: urumi_app
+  password: "UrumiLocalDB-ChangeMe-2026"
+  database: urumi_gateway
+
+primary:
+  persistence:
+    enabled: true
+    storageClass: standard
+    size: 2Gi
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+readReplicas:
+  replicaCount: 0
+
+volumePermissions:
+  enabled: false

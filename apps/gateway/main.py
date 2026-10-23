@@ -17,9 +17,20 @@ from sqlalchemy.orm import Session
 
 from apps.gateway.database import SessionLocal
 from apps.gateway.security import AuthenticatedUser, authenticate_api_key
+
 WOOCOMMERCE_MCP_URL = os.getenv(
     "WOOCOMMERCE_MCP_URL",
     "http://127.0.0.1:8001/mcp",
+)
+
+INVENTORY_MCP_URL = os.getenv(
+    "INVENTORY_MCP_URL",
+    "http://127.0.0.1:8002/mcp",
+)
+
+SHIPPING_MCP_URL = os.getenv(
+    "SHIPPING_MCP_URL",
+    "http://127.0.0.1:8003/mcp",
 )
 
 logger = logging.getLogger(__name__)
@@ -78,12 +89,27 @@ async def health():
     }
 
 
+
 @app.get("/mcp/tools")
 async def list_upstream_tools(
+    upstream: str = "woocommerce",
     current_user: AuthenticatedUser = Depends(require_api_key),
 ):
+    upstream_urls = {
+        "woocommerce": WOOCOMMERCE_MCP_URL,
+        "inventory": INVENTORY_MCP_URL,
+         "shipping": SHIPPING_MCP_URL,
+    }
+
+    upstream_url = upstream_urls.get(upstream)
+    if upstream_url is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported upstream. Choose 'woocommerce' or 'inventory'.",
+        )
+
     try:
-        async with streamable_http_client(WOOCOMMERCE_MCP_URL) as (
+        async with streamable_http_client(upstream_url) as (
             read_stream,
             write_stream,
         ):
@@ -92,7 +118,7 @@ async def list_upstream_tools(
                 result = await session.list_tools()
 
                 return {
-                    "upstream": "woocommerce",
+                    "upstream": upstream,
                     "tools": [
                         {
                             "name": tool.name,
@@ -102,9 +128,13 @@ async def list_upstream_tools(
                     ],
                 }
     except Exception:
+        logger.exception(
+            "Failed to discover MCP tools",
+            extra={"upstream": upstream},
+        )
         raise HTTPException(
             status_code=502,
-            detail="Unable to communicate with the WooCommerce MCP server.",
+            detail=f"Unable to communicate with the {upstream} MCP server.",
         ) from None
 
         
@@ -117,19 +147,34 @@ class ToolCallRequest(BaseModel):
 
 
 
+
 @app.post("/mcp/call")
 async def call_upstream_tool(
     request: ToolCallRequest,
+    upstream: str = "woocommerce",
     current_user: AuthenticatedUser = Depends(require_api_key),
 ):
-    """Execute an authenticated tool call and record its outcome."""
+    """Execute an authenticated MCP tool call and record its outcome."""
+    upstream_urls = {
+        "woocommerce": WOOCOMMERCE_MCP_URL,
+        "inventory": INVENTORY_MCP_URL,
+        "shipping": SHIPPING_MCP_URL,
+    }
+
+    upstream_url = upstream_urls.get(upstream)
+    if upstream_url is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported upstream. Choose 'woocommerce' or 'inventory'.",
+        )
+
     started_at = time.perf_counter()
     request_id = str(uuid.uuid4())
     outcome = "failure"
     error_message = None
 
     try:
-        async with streamable_http_client(WOOCOMMERCE_MCP_URL) as (
+        async with streamable_http_client(upstream_url) as (
             read_stream,
             write_stream,
         ):
@@ -143,7 +188,7 @@ async def call_upstream_tool(
                 outcome = "failure" if result.is_error else "success"
 
                 return {
-                    "upstream": "woocommerce",
+                    "upstream": upstream,
                     "tool": request.name,
                     "is_error": result.is_error,
                     "request_id": request_id,
@@ -156,13 +201,16 @@ async def call_upstream_tool(
                 }
 
     except Exception:
-        error_message = "Unable to execute the requested WooCommerce MCP tool."
+        error_message = f"Unable to execute the requested {upstream} MCP tool."
+        logger.exception(
+            "MCP tool execution failed",
+            extra={"upstream": upstream, "request_id": request_id},
+        )
         raise HTTPException(
             status_code=502,
             detail=error_message,
         ) from None
 
-    
     finally:
         duration_ms = round((time.perf_counter() - started_at) * 1000)
 
@@ -172,7 +220,7 @@ async def call_upstream_tool(
                     AuditLog(
                         user_id=current_user.user.id,
                         api_key_id=current_user.api_key.id,
-                        upstream_name="woocommerce",
+                        upstream_name=upstream,
                         tool_name=request.name,
                         outcome=outcome,
                         duration_ms=duration_ms,
@@ -184,7 +232,11 @@ async def call_upstream_tool(
         except Exception:
             logger.exception(
                 "Failed to persist MCP audit log",
-                extra={"request_id": request_id, "tool_name": request.name},
+                extra={
+                    "request_id": request_id,
+                    "upstream": upstream,
+                    "tool_name": request.name,
+                },
             )
 
 @app.post("/admin/api-keys/{api_key_id}/revoke")

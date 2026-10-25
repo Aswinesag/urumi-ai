@@ -1,3 +1,5 @@
+import { AlertCircle } from 'lucide-react'
+
 export default function AuditLogs() {
   return (
     <div style={{ padding: '32px' }}>
@@ -17,12 +19,13 @@ export default function AuditLogs() {
         borderRadius: '12px',
         textAlign: 'center',
       }}>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#fff', marginBottom: '16px' }}>
-          Backend Integration Required
+        <AlertCircle size={48} style={{ color: '#f59e0b', marginBottom: '16px' }} />
+        <h2 style={{ fontSize: '20px', fontWeight: '600', color: '#fff', marginBottom: '16px', margin: 0 }}>
+          Audit Logs Not Available
         </h2>
         <p style={{ fontSize: '14px', color: '#888', marginBottom: '24px', margin: 0 }}>
-          This page will display audit logs including tool calls, outcomes, durations,
-          and error messages. Backend API integration is needed to fetch log data.
+          The gateway records audit logs for all tool calls, but does not currently expose
+          an endpoint to retrieve them.
         </p>
         <div style={{
           backgroundColor: '#333',
@@ -33,16 +36,24 @@ export default function AuditLogs() {
           margin: '0 auto',
         }}>
           <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>
-            <strong>Planned Features:</strong>
+            <strong>What is recorded:</strong>
           </p>
           <ul style={{ fontSize: '13px', color: '#888', marginTop: '8px', paddingLeft: '20px', margin: 0 }}>
-            <li>Filterable log table with timestamps</li>
             <li>User and API key attribution</li>
             <li>Tool name and upstream server</li>
-            <li>Success/failure status and error details</li>
+            <li>Success/failure status</li>
             <li>Duration metrics</li>
-            <li>Export functionality</li>
+            <li>Error messages (if any)</li>
+            <li>Request ID for tracing</li>
           </ul>
+          <p style={{ fontSize: '12px', color: '#888', marginTop: '16px', margin: 0 }}>
+            <strong>Why it's not visible:</strong>
+          </p>
+          <p style={{ fontSize: '13px', color: '#888', marginTop: '8px', margin: 0 }}>
+            The backend has no read endpoint for audit logs. To view logs, you would need to
+            query the PostgreSQL database directly or the gateway maintainers would need to add a
+            read endpoint with appropriate authorization controls.
+          </p>
         </div>
       </div>
     </div>

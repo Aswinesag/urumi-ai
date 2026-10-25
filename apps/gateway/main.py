@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from typing import Annotated
@@ -46,6 +47,14 @@ app = FastAPI(
     description="Team gateway for securely accessing MCP tools.",
     version="0.1.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 def get_db():
@@ -109,7 +118,16 @@ async def list_upstream_tools(
         )
 
     try:
-        async with streamable_http_client(upstream_url) as (
+        # Use service name with port to ensure valid Host header
+        # The MCP library validates Host headers for security
+        service_urls = {
+            "woocommerce": "http://urumi-woocommerce-mcp:8001/mcp",
+            "inventory": "http://urumi-inventory-mcp:8002/mcp",
+            "shipping": "http://urumi-shipping-mcp:8003/mcp",
+        }
+        service_url = service_urls.get(upstream, upstream_url)
+        
+        async with streamable_http_client(service_url) as (
             read_stream,
             write_stream,
         ):
@@ -174,7 +192,15 @@ async def call_upstream_tool(
     error_message = None
 
     try:
-        async with streamable_http_client(upstream_url) as (
+        # Use service name with port to ensure valid Host header
+        service_urls = {
+            "woocommerce": "http://urumi-woocommerce-mcp:8001/mcp",
+            "inventory": "http://urumi-inventory-mcp:8002/mcp",
+            "shipping": "http://urumi-shipping-mcp:8003/mcp",
+        }
+        service_url = service_urls.get(upstream, upstream_url)
+        
+        async with streamable_http_client(service_url) as (
             read_stream,
             write_stream,
         ):

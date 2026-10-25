@@ -6,21 +6,23 @@ import Overview from './pages/Overview'
 import MCPTools from './pages/MCPTools'
 import AuditLogs from './pages/AuditLogs'
 import AccessControl from './pages/AccessControl'
+import { AuthProvider } from './contexts/AuthContext'
 
 function App() {
   return (
     <BrowserRouter>
-      <div style={{ display: 'flex', minHeight: '100vh' }}>
-        <Sidebar />
-        <Routes>
-          <Route element={<Layout />}>
+      <AuthProvider>
+        <div style={{ display: 'flex', minHeight: '100vh' }}>
+          <Sidebar />
+          <Layout />
+          <Routes>
             <Route path="/" element={<Overview />} />
             <Route path="/mcp-tools" element={<MCPTools />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
             <Route path="/access-control" element={<AccessControl />} />
-          </Route>
-        </Routes>
-      </div>
+          </Routes>
+        </div>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

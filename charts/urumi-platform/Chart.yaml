@@ -1,0 +1,6 @@
+apiVersion: v2
+name: urumi-platform
+description: Urumi AI MCP Gateway Platform - Gateway and MCP services
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

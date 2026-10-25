@@ -1,0 +1,20 @@
+{{- if .Values.inventoryMcp.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: urumi-inventory-mcp
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "urumi-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: inventory-mcp
+spec:
+  type: {{ .Values.inventoryMcp.service.type }}
+  ports:
+  - name: http
+    port: {{ .Values.inventoryMcp.service.port }}
+    targetPort: http
+    protocol: TCP
+  selector:
+    {{- include "urumi-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: inventory-mcp
+{{- end }}

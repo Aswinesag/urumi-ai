@@ -1,0 +1,20 @@
+{{- if .Values.shippingMcp.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: urumi-shipping-mcp
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "urumi-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: shipping-mcp
+spec:
+  type: {{ .Values.shippingMcp.service.type }}
+  ports:
+  - name: http
+    port: {{ .Values.shippingMcp.service.port }}
+    targetPort: http
+    protocol: TCP
+  selector:
+    {{- include "urumi-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: shipping-mcp
+{{- end }}

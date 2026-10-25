@@ -1,0 +1,54 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-gateway
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "urumi-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+spec:
+  replicas: {{ .Values.gateway.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "urumi-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: gateway
+  template:
+    metadata:
+      labels:
+        {{- include "urumi-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: gateway
+    spec:
+      containers:
+      - name: gateway
+        image: "{{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}"
+        imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.gateway.service.port }}
+          protocol: TCP
+        {{- with .Values.gateway.livenessProbe }}
+        livenessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.gateway.readinessProbe }}
+        readinessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        env:
+        # PostgreSQL database connection
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.gateway.env.databaseUrlSecret.name }}
+              key: {{ .Values.gateway.env.databaseUrlSecret.key }}
+        # MCP service URLs
+        - name: WOOCOMMERCE_MCP_URL
+          value: {{ .Values.gateway.env.woocommerceMcpUrl | quote }}
+        - name: INVENTORY_MCP_URL
+          value: {{ .Values.gateway.env.inventoryMcpUrl | quote }}
+        - name: SHIPPING_MCP_URL
+          value: {{ .Values.gateway.env.shippingMcpUrl | quote }}
+        resources:
+          {{- toYaml .Values.gateway.resources | nindent 10 }}
+{{- end }}

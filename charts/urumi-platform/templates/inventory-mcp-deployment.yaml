@@ -1,0 +1,41 @@
+{{- if .Values.inventoryMcp.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-inventory-mcp
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "urumi-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: inventory-mcp
+spec:
+  replicas: {{ .Values.inventoryMcp.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "urumi-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: inventory-mcp
+  template:
+    metadata:
+      labels:
+        {{- include "urumi-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: inventory-mcp
+    spec:
+      containers:
+      - name: inventory-mcp
+        image: "{{ .Values.inventoryMcp.image.repository }}:{{ .Values.inventoryMcp.image.tag }}"
+        imagePullPolicy: {{ .Values.inventoryMcp.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.inventoryMcp.service.port }}
+          protocol: TCP
+        {{- with .Values.inventoryMcp.livenessProbe }}
+        livenessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.inventoryMcp.readinessProbe }}
+        readinessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        # No required environment variables (uses in-memory storage)
+        resources:
+          {{- toYaml .Values.inventoryMcp.resources | nindent 10 }}
+{{- end }}

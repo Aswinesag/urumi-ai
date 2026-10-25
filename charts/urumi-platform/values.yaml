@@ -1,0 +1,212 @@
+# Global configuration
+global:
+  # Namespace where services will be deployed
+  # For local kind: use existing "urumi-gateway" namespace
+  # For production k3s: may use a different namespace
+  namespace: urumi-gateway
+
+  # Image pull policy
+  # For local kind: IfNotPresent to use local images
+  # For production k3s: Always to ensure latest images
+  imagePullPolicy: IfNotPresent
+
+# Gateway service configuration
+gateway:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: urumi-gateway
+    tag: test
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+  # Resource requests and limits
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Health probe configuration
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # Environment variables
+  env:
+    # PostgreSQL connection string
+    # Must be provided via Secret reference
+    # Format: postgresql+psycopg://user:password@host:port/database
+    databaseUrlSecret:
+      name: urumi-gateway-db
+      key: database-url
+
+    # MCP service URLs (Kubernetes Service DNS names)
+    # For local kind: use service names within same namespace
+    # For production k3s: may need to use fully qualified domain names
+    woocommerceMcpUrl: http://urumi-woocommerce-mcp:8001/mcp
+    inventoryMcpUrl: http://urumi-inventory-mcp:8002/mcp
+    shippingMcpUrl: http://urumi-shipping-mcp:8003/mcp
+
+# WooCommerce MCP service configuration
+woocommerceMcp:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: urumi-woocommerce-mcp
+    tag: test
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8001
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8001
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8001
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # Environment variables
+  env:
+    # WooCommerce store URL
+    # For local kind: http://urumi-wordpress.urumi-store.svc.cluster.local
+    # For production k3s: external WooCommerce URL
+    woocommerceUrlSecret:
+      name: urumi-woocommerce
+      key: woocommerce-url
+
+    # WooCommerce API credentials
+    # Must be provided via Secret reference
+    consumerKeySecret:
+      name: urumi-woocommerce
+      key: consumer-key
+
+    consumerSecretSecret:
+      name: urumi-woocommerce
+      key: consumer-secret
+
+# Inventory MCP service configuration
+inventoryMcp:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: urumi-inventory-mcp
+    tag: test
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8002
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8002
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8002
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # No required environment variables (uses in-memory storage)
+
+# Shipping MCP service configuration
+shippingMcp:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: urumi-shipping-mcp
+    tag: test
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8003
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8003
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8003
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # No required environment variables (uses in-memory storage)

@@ -1,0 +1,58 @@
+{{- if .Values.woocommerceMcp.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-woocommerce-mcp
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "urumi-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: woocommerce-mcp
+spec:
+  replicas: {{ .Values.woocommerceMcp.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "urumi-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: woocommerce-mcp
+  template:
+    metadata:
+      labels:
+        {{- include "urumi-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: woocommerce-mcp
+    spec:
+      containers:
+      - name: woocommerce-mcp
+        image: "{{ .Values.woocommerceMcp.image.repository }}:{{ .Values.woocommerceMcp.image.tag }}"
+        imagePullPolicy: {{ .Values.woocommerceMcp.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.woocommerceMcp.service.port }}
+          protocol: TCP
+        {{- with .Values.woocommerceMcp.livenessProbe }}
+        livenessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.woocommerceMcp.readinessProbe }}
+        readinessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        env:
+        # WooCommerce store URL
+        - name: WOOCOMMERCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.woocommerceMcp.env.woocommerceUrlSecret.name }}
+              key: {{ .Values.woocommerceMcp.env.woocommerceUrlSecret.key }}
+        # WooCommerce API credentials
+        - name: WOOCOMMERCE_CONSUMER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.woocommerceMcp.env.consumerKeySecret.name }}
+              key: {{ .Values.woocommerceMcp.env.consumerKeySecret.key }}
+        - name: WOOCOMMERCE_CONSUMER_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.woocommerceMcp.env.consumerSecretSecret.name }}
+              key: {{ .Values.woocommerceMcp.env.consumerSecretSecret.key }}
+        resources:
+          {{- toYaml .Values.woocommerceMcp.resources | nindent 10 }}
+{{- end }}

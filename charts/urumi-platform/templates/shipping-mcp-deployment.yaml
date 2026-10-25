@@ -1,0 +1,41 @@
+{{- if .Values.shippingMcp.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-shipping-mcp
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "urumi-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: shipping-mcp
+spec:
+  replicas: {{ .Values.shippingMcp.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "urumi-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: shipping-mcp
+  template:
+    metadata:
+      labels:
+        {{- include "urumi-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: shipping-mcp
+    spec:
+      containers:
+      - name: shipping-mcp
+        image: "{{ .Values.shippingMcp.image.repository }}:{{ .Values.shippingMcp.image.tag }}"
+        imagePullPolicy: {{ .Values.shippingMcp.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.shippingMcp.service.port }}
+          protocol: TCP
+        {{- with .Values.shippingMcp.livenessProbe }}
+        livenessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.shippingMcp.readinessProbe }}
+        readinessProbe:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        # No required environment variables (uses in-memory storage)
+        resources:
+          {{- toYaml .Values.shippingMcp.resources | nindent 10 }}
+{{- end }}
